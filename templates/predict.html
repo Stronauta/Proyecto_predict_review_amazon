@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: #f4f6fb;
+            color: #333;
+        }
+
+        .topbar {
+            width: 100%;
+            height: 60px;
+            background-color: #2f5ea8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            color: white;
+        }
+
+        .topbar .user-info {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .topbar .logout-btn {
+            background-color: white;
+            color: #2f5ea8;
+            padding: 8px 16px;
+            border-radius: 18px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .topbar .logout-btn:hover {
+            background-color: #e8eef8;
+        }
+
+        .container {
+            min-height: calc(100vh - 60px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            padding: 35px 30px;
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #1f2d3d;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            border: 1px solid #d0d7e2;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            border-color: #2f5ea8;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #2f5ea8;
+            color: white;
+            border: none;
+            border-radius: 22px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background-color: #264d89;
+        }
+
+        .flash-message {
+            margin-bottom: 15px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #ebffe5;
+            color: #3ac11c;
+            border: 1px solid #c7ffb3;
+        }
+
+        .resultado-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #eef4ff;
+            border: 1px solid #c9daf7;
+            border-radius: 10px;
+        }
+
+        .resultado-box h3 {
+            margin-top: 0;
+            color: #2f5ea8;
+        }
+
+        .resultado-box p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="user-info">
+            Usuario: {{ nombre }}
+        </div>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Predicción de Reseña</h2>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-message">
+                        {{ messages[0] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('predict') }}" method="POST">
+                <label for="texto">Ingrese el texto a analizar</label>
+                <textarea id="texto" name="texto" placeholder="Escriba aquí su comentario..." required>{{ texto }}</textarea>
+
+                <button type="submit">Predecir</button>
+            </form>
+
+            {% if resultado %}
+                <div class="resultado-box">
+                    <h3>Resultado</h3>
+                    <p><strong>Texto:</strong> {{ texto }}</p>
+                    <p><strong>Predicción:</strong> {{ resultado }}</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>
