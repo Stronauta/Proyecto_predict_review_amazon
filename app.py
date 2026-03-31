@@ -1,20 +1,13 @@
-from flask import Flask, flash, redirect, render_template, request, jsonify, url_for, session
-from flask_jwt_extended import (
-    JWTManager, create_access_token, decode_token, jwt_required, get_jwt_identity
-)
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask import Flask, flash, redirect, render_template, request, url_for, session
+from flask_jwt_extended import JWTManager, create_access_token
 from flask_mysqldb import MySQL
-import pickle
 import joblib
-import json 
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
 app.config["JWT_SECRET_KEY"] = "super-secret-key"
 
 jwt = JWTManager(app)
-limiter = Limiter(get_remote_address, app=app)
 
 # Configuración de MySQL
 app.config['MYSQL_HOST'] = 'localhost'
@@ -26,10 +19,9 @@ mysql = MySQL(app)
 
 modelo_cargado = joblib.load("Modelo/pipeline_sentimientos.pkl")
 
-
 @app.route("/")
 def home():
-    return redirect(url_for("login_proyecto"))
+    return redirect(url_for("login"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -104,14 +96,68 @@ def register():
             return redirect(url_for("register"))
 
     return render_template("register.html")
+
+@app.route("/predict", methods=["GET", "POST"])
+def predict():
+    if "token" not in session:
+        flash("Debe iniciar sesión primero", "error")
+        return redirect(url_for("login"))
+
+    resultado = None
+    texto = ""
+
+    if request.method == "POST":
+        texto = request.form.get("texto", "").strip()
+
+        if not texto:
+            flash("Debe ingresar un texto para analizar", "error")
+            return render_template(
+                "predict.html",
+                resultado=resultado,
+                texto=texto,
+                nombre=session.get("nombre")
+            )
+
+        try:
+            cursor = mysql.connection.cursor()
+
+            cursor.execute(
+                "SELECT prediccion FROM predicciones WHERE texto = %s",
+                (texto,)
+            )
+            prediccion_guardada = cursor.fetchone()
+
+            if prediccion_guardada:
+                resultado = prediccion_guardada[0]
+            else:
+                resultado = modelo_cargado.predict([texto])[0]
+
+                cursor.execute(
+                    "INSERT INTO predicciones (texto, prediccion) VALUES (%s, %s)",
+                    (texto, resultado)
+                )
+                mysql.connection.commit()
+
+            cursor.close()
+
+        except Exception as e:
+            flash(f"Error al realizar la predicción: {str(e)}", "error")
+
+    return render_template(
+        "predict.html",
+        resultado=resultado,
+        texto=texto,
+        nombre=session.get("nombre")
+    )
+
 @app.route("/logout")
 def logout():
-    session.pop("token", None),
-    session.pop("username", None),
+    session.pop("token", None)
+    session.pop("usuario", None)
     session.pop("nombre", None)
 
     flash("Sesión cerrada exitosamente", "success")
-    return redirect(url_for("login_proyecto"))
+    return redirect(url_for("login"))
 
 if __name__ == "__main__":
     app.run(debug=True)
