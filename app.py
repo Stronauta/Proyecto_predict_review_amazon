@@ -44,7 +44,7 @@ def login():
         try:
             cursor = mysql.connection.cursor()
             cursor.execute(
-                "SELECT id_usuario, nombre, usuario FROM usuarios WHERE usuario = %s AND clave = %s",
+                "SELECT id_usuario, nombre, usuario, clave FROM usuarios WHERE usuario = %s AND clave = %s",
                 (usuario, clave)
             )
             user = cursor.fetchone()
@@ -52,7 +52,7 @@ def login():
 
             if user:
                 session["token"] = create_access_token(identity=user[0])
-                session["username"] = user[2]
+                session["usuario"] = user[2]
                 session["nombre"] = user[1]
 
                 flash("Inicio de sesión exitoso", "success")
@@ -67,6 +67,43 @@ def login():
 
     return render_template("login.html")
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        nombre = request.form.get("nombre")
+        usuario = request.form.get("usuario")
+        clave = request.form.get("clave")
+
+        if not nombre or not usuario or not clave:
+            flash("Todos los campos son obligatorios", "error")
+            return redirect(url_for("register"))
+
+        try:
+            cursor = mysql.connection.cursor()
+
+            cursor.execute("SELECT id_usuario FROM usuarios WHERE usuario = %s", (usuario,))
+            usuario_existente = cursor.fetchone()
+
+            if usuario_existente:
+                cursor.close()
+                flash("Ese nombre de usuario ya está en uso", "error")
+                return redirect(url_for("register"))
+
+            cursor.execute(
+                "INSERT INTO usuarios (nombre, usuario, clave) VALUES (%s, %s, %s)",
+                (nombre, usuario, clave)
+            )
+            mysql.connection.commit()
+            cursor.close()
+
+            flash("Usuario registrado correctamente", "success")
+            return redirect(url_for("login"))
+
+        except Exception as e:
+            flash(f"Error al registrar usuario: {str(e)}", "error")
+            return redirect(url_for("register"))
+
+    return render_template("register.html")
 @app.route("/logout")
 def logout():
     session.pop("token", None),
