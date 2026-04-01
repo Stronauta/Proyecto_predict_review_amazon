@@ -43,6 +43,8 @@ def login():
             cursor.close()
 
             if user:
+                print(user)
+                print(user[0])
                 session["token"] = create_access_token(identity=user[0])
                 session["usuario"] = user[2]
                 session["nombre"] = user[1]
